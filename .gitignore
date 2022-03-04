@@ -1,0 +1,7 @@
+# Stuff
+data/
+checkpoints/
+pretrained_models/
+
+# MacOS
+.DS_Store
