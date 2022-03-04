@@ -2,7 +2,7 @@
 
 This is the code for finding image correspondence on an overlapping MNIST dataset.
 
-##Generating Data
+## Generating Data
 Run dataloader.py as follows:
 ```
 python3 dataloader.py --
