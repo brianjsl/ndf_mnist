@@ -15,14 +15,6 @@ multilabel classification (in the ResNet block).
 
 ## Miscallaneous Issues:
 
-### Setting Up Conda For Satori
-#### Like the getting started guide, add the following channels:
-conda config --prepend channels \
-https://public.dhe.ibm.com/ibmdl/export/pub/software/server/ibm-ai/conda/
-
-conda config --prepend channels \
-https://opence.mit.edu
-
 ### To fix g++ issues on satori
 #### if you get some c++ compiler warning
 export CXX=g++
