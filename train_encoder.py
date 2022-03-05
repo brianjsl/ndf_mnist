@@ -14,12 +14,13 @@ from tqdm import tqdm
 data_dir = IMG_DIR
 num_classes = 10
 batch_size = 8
-num_epochs = 40
+num_epochs = 15 
+feature_extract = True
 
 #Push to GPU 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def initialize_model(num_classes, use_pretrained = True):
+def initialize_model(num_classes, feature_extract, use_pretrained = True):
     '''
     Initializes a ResNet model with a given number of classes. 
     
@@ -30,11 +31,17 @@ def initialize_model(num_classes, use_pretrained = True):
     '''
     #fine-tuned model
     model_ft = models.resnet18(pretrained=use_pretrained)
+    set_parameter_requires_grad(model_ft, feature_extract)
     num_ftrs = model_ft.fc.in_features
     model_ft.fc = nn.Linear(num_ftrs, num_classes)
     input_size = 224
 
     return model_ft, input_size
+
+def set_parameter_requires_grad(model, feature_extracting):
+    if feature_extracting:
+        for param in model.parameters():
+            param.requires_grad = False
 
 def train_model(model, dataloaders, criterion, optimizer, num_epochs):
     '''
@@ -67,47 +74,50 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
             else:
                 model.eval()
 
-        #keep track of losses and corrects        
-        running_loss = 0.0
-        running_corrects = 0.0
+            #keep track of losses and corrects        
+            running_loss = 0.0
+            running_corrects = 0.0
 
-        #Iterate over data
-        for inputs, labels in tqdm(dataloaders[phase]):
-            inputs = inputs.to(device)
-            labels = labels.to(device)
+            #Iterate over data
+            for inputs, labels in tqdm(dataloaders[phase]):
+                inputs = inputs.to(device)
+                labels = labels.to(device)
 
-            #zero the parameter gradients
-            optimizer.zero_grad()
+                #zero the parameter gradients
+                optimizer.zero_grad()
 
-            #forward and track history if train
-            with torch.set_grad_enabled(phase == 'train'):
-                outputs = model(inputs)
-                loss = criterion(outputs, labels)
+                #forward and track history if train
+                with torch.set_grad_enabled(phase == 'train'):
+                    outputs = model(inputs)
+                    loss = criterion(outputs, labels)
                 
-                #map to an output
-                m = nn.Sigmoid()
-                outputs = m(outputs)
-                preds = torch.where(outputs > 1/2, 1, 0)
+                    #map to an output
+                    m = nn.Sigmoid()
+                    outputs = m(outputs)
+                    preds = torch.where(outputs > 1/2, 1, 0)
                 
-                if phase == 'train':
-                    loss.backward()
-                    optimizer.step()
+                    if phase == 'train':
+                        loss.backward()
+                        optimizer.step()
             
-            #statistics to keep track of
-            running_loss += loss.item() * inputs.size(0)
-            running_corrects += torch.sum(preds == labels.data)
-        
-        epoch_loss = running_loss / len(dataloaders[phase].dataset)
-        epoch_acc = running_corrects.double() / len(dataloaders[phase].dataset)
+                #statistics to keep track of
+                running_loss += loss.item() * inputs.size(0)
+                
+                for i in range(batch_size):
+                    if torch.equal(preds[:,i], labels[:,i]):
+                        running_corrects += 1
 
-        print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
+            epoch_loss = running_loss / len(dataloaders[phase].dataset)
+            epoch_acc = running_corrects / len(dataloaders[phase].dataset)
 
-        # deep copy the model
-        if phase == 'val' and epoch_acc > best_acc:
-                best_acc = epoch_acc
-                best_model_wts = copy.deepcopy(model.state_dict())
-        if phase == 'val':
-                val_acc_history.append(epoch_acc)
+            print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
+
+            # deep copy the model
+            if phase == 'val' and epoch_acc > best_acc:
+                    best_acc = epoch_acc
+                    best_model_wts = copy.deepcopy(model.state_dict())
+            if phase == 'val':
+                    val_acc_history.append(epoch_acc)
 
         print()
 
@@ -121,7 +131,7 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
             
 if __name__ == '__main__':
     # Initialize the model for this run
-    model_ft, input_size = initialize_model(10) 
+    model_ft, input_size = initialize_model(10, feature_extract = True) 
     
     data_transforms = {
         'train': transforms.Compose([
@@ -149,8 +159,17 @@ if __name__ == '__main__':
     #Push the model to gpu
     model_ft = model_ft.to(device)
 
+    params_to_update = model_ft.parameters()
+    #parameters to update
+    if feature_extract:
+        params_to_update = []
+        for name,param in model_ft.named_parameters():
+            if param.requires_grad == True:
+                params_to_update.append(param)
+
     #Initilaize Optimizer
-    optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.001, momentum=0.9)
+    optimizer_ft = optim.SGD(params_to_update, lr=0.001, momentum=0.9)
+
     #Initialize Criterion
     criterion = nn.BCEWithLogitsLoss()
 
@@ -158,4 +177,6 @@ if __name__ == '__main__':
     model_ft, hist = train_model(model_ft, dataloaders_dict, criterion, optimizer_ft, 
                         num_epochs=num_epochs)
 
-    torch.save(model_ft, './src/models/olmnist_resnet.pt')
+    torch.save(model_ft, 'olmnist_resnet.pt')
+
+    
