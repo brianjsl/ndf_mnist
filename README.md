@@ -13,6 +13,16 @@ left digit and 'b' is the right digit.
 The corresponding dataloader class can be found in dataloader.py which will turn the labels into labels usable in 
 multilabel classification (in the ResNet block). 
 
+## Training the Latent Network
+Run train_encoder.py to fine-tune ResNet on the data to create Latent Encodings. The model should be stored in 
+src/models. 
+
+## Creating the Latent Encodings
+Run create_latents.py to do inference on the trained ResNet model stored in src/models. The corresponding latent 
+encodings of the images will be stored in src/latents. 
+
+## Point Sampling
+
 ## Miscallaneous Issues:
 
 ### To fix g++ issues on satori

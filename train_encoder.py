@@ -2,10 +2,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
+import torch.optim as optim
+import torchvision.transforms as transforms
 import numpy as np
 import time
 from constants import IMG_DIR, TRAIN_DIR, VAL_DIR, TEST_DIR
 import copy
+from dataloader import OverlapMNIST
 from tqdm import tqdm
 
 data_dir = IMG_DIR
@@ -32,8 +35,6 @@ def initialize_model(num_classes, use_pretrained = True):
     input_size = 224
 
     return model_ft, input_size
-    
-    
 
 def train_model(model, dataloaders, criterion, optimizer, num_epochs):
     '''
@@ -118,8 +119,40 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
     return model, val_acc_history
             
 if __name__ == '__main__':
+    # Initialize the model for this run
+    model_ft, input_size = initialize_model(10) 
     
-        
+    data_transforms = {
+        'train': transforms.Compose([
+            transforms.Resize(input_size),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ]),
+        'val': transforms.Compose([
+            transforms.Resize(input_size),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ]),
+    }
 
+    print('Initializing Datasets and Dataloaders...')
 
+    #create training and validation datasets
+    image_datasets = {x: OverlapMNIST(IMG_DIR, data_transforms[x], x) for x in ['train', 'val']}
+    #create training and validation dataloaders
+    dataloaders_dict = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size = batch_size,
+                        shuffle = True, num_workers = 4) for x in ['train', 'val']}
+    
+    #Push the model to gpu
+    model_ft = model_ft.to(device)
 
+    #Initilaize Optimizer
+    optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.001, momentum=0.9)
+    #Initialize Criterion
+    criterion = nn.BCEWithLogitsLoss()
+
+    #Train Model
+    model_ft, hist = train_model(model_ft, dataloaders_dict, criterion, optimizer_ft, 
+                        num_epochs=num_epochs)
+
+    torch.save(model_ft, './src/models/olmnist_resnet.pt')

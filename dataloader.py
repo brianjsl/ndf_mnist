@@ -69,10 +69,19 @@ class OverlapMNIST(Dataset):
         return img, label
 
 if __name__ == '__main__':
-    transform = transforms.Compose([
-        transforms.ToTensor()
-    ])
-    train_data = OverlapMNIST(IMG_DIR, transform, 'train')
+    data_transforms = {
+        'train': transforms.Compose([
+            transforms.Resize(224),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ]),
+        'val': transforms.Compose([
+            transforms.Resize(224),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ]),
+    }
+    train_data = OverlapMNIST(IMG_DIR, data_transforms['train'], 'train')
     plt.imshow(train_data[0][0], cmap = 'gray')
     plt.title(train_data[0][1])
     plt.show()
