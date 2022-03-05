@@ -14,10 +14,10 @@ from tqdm import tqdm
 data_dir = IMG_DIR
 num_classes = 10
 batch_size = 8
-num_epochs = 15
+num_epochs = 40
 
 #Push to GPU 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def initialize_model(num_classes, use_pretrained = True):
     '''
@@ -72,7 +72,7 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
         running_corrects = 0.0
 
         #Iterate over data
-        for inputs, labels in dataloaders[phase]:
+        for inputs, labels in tqdm(dataloaders[phase]):
             inputs = inputs.to(device)
             labels = labels.to(device)
 
@@ -85,7 +85,8 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
                 loss = criterion(outputs, labels)
                 
                 #map to an output
-                outputs = nn.Sigmoid(outputs)
+                m = nn.Sigmoid()
+                outputs = m(outputs)
                 preds = torch.where(outputs > 1/2, 1, 0)
                 
                 if phase == 'train':
@@ -141,8 +142,10 @@ if __name__ == '__main__':
     image_datasets = {x: OverlapMNIST(IMG_DIR, data_transforms[x], x) for x in ['train', 'val']}
     #create training and validation dataloaders
     dataloaders_dict = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size = batch_size,
-                        shuffle = True, num_workers = 4) for x in ['train', 'val']}
+                        shuffle = True, num_workers = 2) for x in ['train', 'val']}
     
+    print("Done Initializing Data.")
+    print('\n')
     #Push the model to gpu
     model_ft = model_ft.to(device)
 

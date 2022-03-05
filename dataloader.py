@@ -64,7 +64,6 @@ class OverlapMNIST(Dataset):
         transforms = self.transforms
         if transforms is not None:
             img = transforms(img)
-        img = torch.squeeze(img).permute(1,2,0)
 
         return img, label
 
