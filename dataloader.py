@@ -16,7 +16,8 @@ from constants import IMG_DIR
 
 class OverlapMNIST(Dataset):
     '''
-    Dataset of Overlapping MNIST Images.
+    Dataset of Overlapping MNIST Images. 
+    Images returned as (h,w,3) size images.
     '''
     def __init__(self,
                  directory: str,
@@ -59,19 +60,19 @@ class OverlapMNIST(Dataset):
         
         file_path = self.img_dir+'/'+folder_name+'/'+str(index)+'_'+folder_name+'.png'
         img = Image.open(file_path)
+        img = img.convert('RGB')
         transforms = self.transforms
         if transforms is not None:
             img = transforms(img)
-        img = torch.squeeze(img)
+        img = torch.squeeze(img).permute(1,2,0)
 
         return img, label
 
 if __name__ == '__main__':
     transform = transforms.Compose([
-        transforms.ToTensor(),
+        transforms.ToTensor()
     ])
     train_data = OverlapMNIST(IMG_DIR, transform, 'train')
     plt.imshow(train_data[0][0], cmap = 'gray')
     plt.title(train_data[0][1])
     plt.show()
-    pass
