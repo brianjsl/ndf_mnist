@@ -1,6 +1,6 @@
 import os
 
-IMG_DIR = './data/MNIST/overlapMNIST/'
+IMG_DIR = '/data/MNIST/overlapMNIST/'
 TRAIN_DIR = IMG_DIR + '/train/'
 VAL_DIR = IMG_DIR + '/val/'
 TEST_DIR = IMG_DIR + '/test/'

@@ -1,7 +1,7 @@
 # Stuff
 data/
 checkpoints/
-pretrained_models/
+src/models
 
 # MacOS
 .DS_Store
