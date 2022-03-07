@@ -44,15 +44,15 @@ class OverlapMNISTNDF(Dataset):
 
     def __len__(self):
         if self.set_name == 'train':
-            return len(self.set_list)*100*1024
-        else:
             return len(self.set_list)*10*1024
+        else:
+            return len(self.set_list)*2*1024
 
     def __getitem__(self, idx: int):
         if self.set_name == 'train':
-            img_label, rem = divmod(idx, 1024*100) #returns the img label and file index
+            img_label, rem = divmod(idx, 1024*10) #returns the img label and file index
         else:
-            img_label, rem = divmod(idx, 1024*10) #returns the img label and file index 
+            img_label, rem = divmod(idx, 1024*2) #returns the img label and file index 
         folder_name = self.set_list[img_label]
 
         index, pos = divmod(rem,1024) #index of image

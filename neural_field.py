@@ -12,8 +12,9 @@ from constants import IMG_DIR
 import copy
 
 input_size = 224
-batch_size = 8
+batch_size = 32 
 num_epochs = 15
+learning_rate = 1e-4
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 encoder = torch.load('./src/models/olmnist_resnet.pt', map_location=device)
 
@@ -53,24 +54,25 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
             running_corrects = 0.0
 
             #Iterate over data
-            for inputs, labels in tqdm(dataloaders[phase]):
-                inputs = inputs.to(device)
-                labels = labels.to(device)
-
+            for i, (inputs, labels) in tqdm(dataloaders[phase]):
+                labels = labels.to(device).view(batch_size,-1)
+                
                 #zero the parameter gradients
                 optimizer.zero_grad()
 
                 #forward and track history if train
                 with torch.set_grad_enabled(phase == 'train'):
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
+                    outputs = model((inputs[0].to(device), inputs[1].to(device)))
+                    m = nn.Sigmoid()
+                    outputs = 255*m(outputs)
+                    loss = criterion(outputs, labels.float())
                 
                     if phase == 'train':
                         loss.backward()
                         optimizer.step()
             
                 #statistics to keep track of
-                running_loss += loss.item() * inputs.size(0)
+                running_loss += loss.item()
                 
                 running_corrects += torch.sum(outputs == labels.data)
 
@@ -85,7 +87,7 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
                     best_model_wts = copy.deepcopy(model.state_dict())
             if phase == 'val':
                     val_acc_history.append(epoch_acc)
-
+        torch.save(model, './checkpoints/chkpt_{}.pt'.format(epoch))
         print()
 
     time_elapsed = time.time() - since
@@ -100,7 +102,7 @@ class NeuralField(nn.Module):
     def __init__(self):
         super(NeuralField, self).__init__()
         self.linear_relu_stack = nn.Sequential(
-            nn.Linear(14, 512), 
+            nn.Linear(12, 512), 
             nn.ReLU(),
             nn.Linear(512, 512),
             nn.ReLU(),
@@ -109,13 +111,15 @@ class NeuralField(nn.Module):
     
     def forward(self, x):
         z = encoder(x[0])
-        coords = x[1]
-        input = torch.cat((z,coords), 0)
+        coords = x[1].view(batch_size, 2)
+        input = torch.cat((z,coords), 1)
         intensity = self.linear_relu_stack(input)
         return intensity
 
 if __name__ == '__main__':
-    model = NeuralField().to(device)
+    model = NeuralField()
+    model = nn.DataParallel(model)
+    model = model.to(device)
 
     data_transforms = {
         'train': transforms.Compose([
@@ -140,8 +144,7 @@ if __name__ == '__main__':
     print("Done Initializing Data.")
 
     #Initilaize Optimizer
-    optimizer_ft = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
-
+    optimizer_ft =  optim.Adam(model.parameters(), lr = learning_rate)
     test_dataset = OverlapMNISTNDF(IMG_DIR, data_transforms, 'train')
     test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size = batch_size, shuffle = True, num_workers = True)
 
