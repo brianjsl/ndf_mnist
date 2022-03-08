@@ -64,7 +64,7 @@ class OverlapMNISTNDF(Dataset):
         x_coord, y_coord = divmod(pos, 32) #tuple used in NDF
         pos = torch.tensor([x_coord,y_coord]).reshape(2,-1)
 
-        intensity = torch.tensor(img.getpixel((x_coord,y_coord)))
+        intensity = torch.tensor(img.getpixel((x_coord,y_coord)))/255
 
         transforms = self.transforms
         if transforms is not None:

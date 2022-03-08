@@ -29,17 +29,13 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
     @ optimizer: optimizer used 
     @ num_epochs: number of epochs to train for
     '''
-    since = time.time()
-
-    #validation accuracy history
-    val_acc_history = []
+    since = time.time() 
     
     #weights of best model
     best_model_wts = copy.deepcopy(model.state_dict())
-    best_acc = 0.0
 
     for epoch in range(num_epochs):
-        print('Epoch {}/{}'.format(epoch, num_epochs - 1))
+        print('Epoch {}/{}'.format(epoch+1, num_epochs))
         print('_'*10)
 
         # Each epoch has a training and validation phase
@@ -51,10 +47,9 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
 
             #keep track of losses and corrects        
             running_loss = 0.0
-            running_corrects = 0.0
 
             #Iterate over data
-            for i, (inputs, labels) in tqdm(dataloaders[phase]):
+            for inputs, labels in tqdm(dataloaders[phase]):
                 labels = labels.to(device).view(batch_size,-1)
                 
                 #zero the parameter gradients
@@ -64,7 +59,7 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model((inputs[0].to(device), inputs[1].to(device)))
                     m = nn.Sigmoid()
-                    outputs = 255*m(outputs)
+                    outputs = m(outputs)
                     loss = criterion(outputs, labels.float())
                 
                     if phase == 'train':
@@ -74,29 +69,19 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
                 #statistics to keep track of
                 running_loss += loss.item()
                 
-                running_corrects += torch.sum(outputs == labels.data)
-
             epoch_loss = running_loss / len(dataloaders[phase].dataset)
-            epoch_acc = running_corrects / len(dataloaders[phase].dataset)
 
-            print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
+            print('{} Loss: {:.4f}'.format(phase, epoch_loss))
 
-            # deep copy the model
-            if phase == 'val' and epoch_acc > best_acc:
-                    best_acc = epoch_acc
-                    best_model_wts = copy.deepcopy(model.state_dict())
-            if phase == 'val':
-                    val_acc_history.append(epoch_acc)
         torch.save(model, './checkpoints/chkpt_{}.pt'.format(epoch))
         print()
 
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
-    print('Best val Acc: {:4f}'.format(best_acc))
 
     # load best model weights
     model.load_state_dict(best_model_wts)
-    return model, val_acc_history
+    return model
 
 class NeuralField(nn.Module):
     def __init__(self):
@@ -118,7 +103,7 @@ class NeuralField(nn.Module):
 
 if __name__ == '__main__':
     model = NeuralField()
-    model = nn.DataParallel(model)
+    # model = nn.DataParallel(model)
     model = model.to(device)
 
     data_transforms = {
@@ -149,7 +134,7 @@ if __name__ == '__main__':
     test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size = batch_size, shuffle = True, num_workers = True)
 
     criterion = nn.MSELoss()
-    model, hist = train_model(model, dataloaders_dict, criterion, optimizer_ft, 
+    model = train_model(model, dataloaders_dict, criterion, optimizer_ft, 
                         num_epochs=num_epochs)
     
     torch.save(model, 'neural_field.py')
