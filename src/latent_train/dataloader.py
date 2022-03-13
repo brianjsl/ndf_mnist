@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import constants
 from constants import IMG_DIR
 
+
 class OverlapMNIST(Dataset):
     '''
     Dataset of Overlapping MNIST Images. 
@@ -21,7 +22,7 @@ class OverlapMNIST(Dataset):
     '''
     def __init__(self,
                  directory: str,
-                 transforms: None,
+                 transforms: ToTensor(),
                  set_name: str,
                 ):
         '''
@@ -65,28 +66,11 @@ class OverlapMNIST(Dataset):
             label[second_num] += 1
         
         file_path = self.img_dir+'/'+folder_name+'/'+str(index)+'_'+folder_name+'.png'
-        img = Image.open(file_path)
-        img = img.convert('RGB')
+        img = Image.open(file_path) 
         transforms = self.transforms
         if transforms is not None:
             img = transforms(img)
-
         return img, label
 
 if __name__ == '__main__':
-    data_transforms = {
-        'train': transforms.Compose([
-            transforms.Resize(224),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ]),
-        'val': transforms.Compose([
-            transforms.Resize(224),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ]),
-    }
-    train_data = OverlapMNIST(IMG_DIR, data_transforms['train'], 'train')
-    plt.imshow(train_data[0][0], cmap = 'gray')
-    plt.title(train_data[0][1])
-    plt.show()
+    train_data = OverlapMNIST(IMG_DIR, None, 'train')

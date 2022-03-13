@@ -6,17 +6,55 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
 import torch.optim as optim
+from torch.utils.tensorboard import SummaryWriter
 import time
 from tqdm import tqdm
 from constants import IMG_DIR
+import torchvision.models as models
 import copy
 
-input_size = 224
 batch_size = 32 
-num_epochs = 15
+num_epochs = 10
 learning_rate = 1e-4
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-encoder = torch.load('./src/models/olmnist_resnet.pt', map_location=device)
+
+def initialize_encoder(num_classes, feature_extract, use_pretrained = True):
+    '''
+    Initializes a ResNet model with a given number of classes. 
+    
+    params:
+    @num_classes: defines number of classes to use for the model
+    @use_pretrained: defines whether or not to use pretrained weights
+    in training phase. Defaults to True.
+    '''
+    #fine-tuned model
+    model_ft = models.resnet18(pretrained=True)
+    num_ftrs = model_ft.fc.in_features
+    model_ft.fc = nn.Linear(num_ftrs, 128)
+    model_ft.conv1 = nn.Conv2d(1, 64, (7,7), (2,2), (3,3), bias = False)
+    model_ft.maxpool = nn.Identity() 
+
+    return model_ft
+
+class NeuralField(nn.Module):
+    def __init__(self, encoder):
+        super(NeuralField, self).__init__()
+        self.linear_relu_stack = nn.Sequential(
+            nn.Linear(130, 512), 
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512,1),
+            nn.Sigmoid()
+        )
+        self.encoder = encoder
+    
+    def forward(self, x):
+        z = self.encoder(x[0]) 
+        coords = x[1].view(batch_size, 2)   
+        input = torch.cat((z,coords), 1)
+        intensity = self.linear_relu_stack(input)
+        return intensity
 
 def train_model(model, dataloaders, criterion, optimizer, num_epochs):
     '''
@@ -58,8 +96,6 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
                 #forward and track history if train
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model((inputs[0].to(device), inputs[1].to(device)))
-                    m = nn.Sigmoid()
-                    outputs = m(outputs)
                     loss = criterion(outputs, labels.float())
                 
                     if phase == 'train':
@@ -69,9 +105,10 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
                 #statistics to keep track of
                 running_loss += loss.item()
                 
-            epoch_loss = running_loss / len(dataloaders[phase].dataset)
+            epoch_loss = running_loss 
 
             print('{} Loss: {:.4f}'.format(phase, epoch_loss))
+            writer.add_scalar("Loss: {}".format(phase), epoch_loss, epoch)
 
         torch.save(model, './checkpoints/chkpt_{}.pt'.format(epoch))
         print()
@@ -83,60 +120,33 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
     model.load_state_dict(best_model_wts)
     return model
 
-class NeuralField(nn.Module):
-    def __init__(self):
-        super(NeuralField, self).__init__()
-        self.linear_relu_stack = nn.Sequential(
-            nn.Linear(12, 512), 
-            nn.ReLU(),
-            nn.Linear(512, 512),
-            nn.ReLU(),
-            nn.Linear(512,1)
-        )
-    
-    def forward(self, x):
-        z = encoder(x[0])
-        coords = x[1].view(batch_size, 2)
-        input = torch.cat((z,coords), 1)
-        intensity = self.linear_relu_stack(input)
-        return intensity
-
 if __name__ == '__main__':
-    model = NeuralField()
-    # model = nn.DataParallel(model)
-    model = model.to(device)
+    writer = SummaryWriter()
 
-    data_transforms = {
-        'train': transforms.Compose([
-            transforms.Resize(input_size),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ]),
-        'val': transforms.Compose([
-            transforms.Resize(input_size),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ]),
-    }
+    encoder = initialize_encoder(128, False, True)
+
+    model = NeuralField(encoder)
+    model = model.to(device)
 
     print('Initializing Datasets and Dataloaders...')
 
+    data_transforms = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize([0.5],[0.5])
+    ])
     #create training and validation datasets
-    image_datasets = {x: OverlapMNISTNDF(IMG_DIR, data_transforms[x], x) for x in ['train', 'val']}
+    image_datasets = {x: OverlapMNISTNDF(IMG_DIR, data_transforms, x) for x in ['train', 'val']}
     #create training and validation dataloaders
     dataloaders_dict = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size = batch_size,
                         shuffle = True, num_workers = 2) for x in ['train', 'val']}
     print("Done Initializing Data.")
-
     #Initilaize Optimizer
     optimizer_ft =  optim.Adam(model.parameters(), lr = learning_rate)
-    test_dataset = OverlapMNISTNDF(IMG_DIR, data_transforms, 'train')
-    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size = batch_size, shuffle = True, num_workers = True)
 
     criterion = nn.MSELoss()
     model = train_model(model, dataloaders_dict, criterion, optimizer_ft, 
                         num_epochs=num_epochs)
-    
+    writer.flush()
     torch.save(model, 'neural_field.py')
 
 

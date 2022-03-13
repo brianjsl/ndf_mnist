@@ -21,7 +21,7 @@ class OverlapMNISTNDF(Dataset):
     '''
     def __init__(self,
                  directory: str,
-                 transforms: None,
+                 transforms: ToTensor(),
                  set_name: str,
                 ):
         '''
@@ -60,7 +60,6 @@ class OverlapMNISTNDF(Dataset):
         file_path = self.img_dir+'/'+folder_name+'/'+str(index)+'_'+folder_name+'.png'
         
         img = Image.open(file_path)
-        img = img.convert('RGB')
         x_coord, y_coord = divmod(pos, 32) #tuple used in NDF
         pos = torch.tensor([x_coord,y_coord]).reshape(2,-1)
 
@@ -70,20 +69,8 @@ class OverlapMNISTNDF(Dataset):
         if transforms is not None:
             img = transforms(img)
  
-        return ((img, pos), intensity[0])
+        return ((img, pos), intensity)
 
 if __name__ == '__main__':
-    data_transforms = {
-        'train': transforms.Compose([
-            transforms.Resize(224),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ]),
-        'val': transforms.Compose([
-            transforms.Resize(224),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ]),
-    }
-    data = OverlapMNISTNDF(IMG_DIR, data_transforms['train'],'train')
-    print(data[0])
+    data = OverlapMNISTNDF(IMG_DIR, ToTensor(),'train')
+    print(data[0][0][0].size())
