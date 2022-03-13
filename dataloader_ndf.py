@@ -68,7 +68,7 @@ class OverlapMNISTNDF(Dataset):
         transforms = self.transforms
         if transforms is not None:
             img = transforms(img)
- 
+        
         return ((img, pos), intensity)
 
 if __name__ == '__main__':

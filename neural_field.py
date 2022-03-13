@@ -6,7 +6,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
 import torch.optim as optim
-from torch.utils.tensorboard import SummaryWriter
 import time
 from tqdm import tqdm
 from constants import IMG_DIR
@@ -15,7 +14,7 @@ import copy
 
 batch_size = 32 
 num_epochs = 10
-learning_rate = 1e-4
+learning_rate = 3e-4
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def initialize_encoder(num_classes, feature_extract, use_pretrained = True):
@@ -73,7 +72,7 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
     best_model_wts = copy.deepcopy(model.state_dict())
 
     for epoch in range(num_epochs):
-        print('Epoch {}/{}'.format(epoch+1, num_epochs))
+        print('Epoch {}/{}'.format(epoch+11, num_epochs+11))
         print('_'*10)
 
         # Each epoch has a training and validation phase
@@ -108,7 +107,6 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
             epoch_loss = running_loss 
 
             print('{} Loss: {:.4f}'.format(phase, epoch_loss))
-            writer.add_scalar("Loss: {}".format(phase), epoch_loss, epoch)
 
         torch.save(model, './checkpoints/chkpt_{}.pt'.format(epoch))
         print()
@@ -121,11 +119,9 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
     return model
 
 if __name__ == '__main__':
-    writer = SummaryWriter()
-
     encoder = initialize_encoder(128, False, True)
 
-    model = NeuralField(encoder)
+    model = torch.load('./checkpoints/chkpt_9.pt')
     model = model.to(device)
 
     print('Initializing Datasets and Dataloaders...')
@@ -146,8 +142,7 @@ if __name__ == '__main__':
     criterion = nn.MSELoss()
     model = train_model(model, dataloaders_dict, criterion, optimizer_ft, 
                         num_epochs=num_epochs)
-    writer.flush()
-    torch.save(model, 'neural_field.py')
+    torch.save(model, 'neural_field.pt')
 
 
     
