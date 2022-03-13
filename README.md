@@ -13,14 +13,24 @@ left digit and 'b' is the right digit.
 The corresponding dataloader class can be found in dataloader.py which will turn the labels into labels usable in 
 multilabel classification (in the ResNet block). 
 
-## Training the Latent Network
-Run train_encoder.py to fine-tune ResNet on the data to create Latent Encodings. The model will be called 
-olmnist_resnet.pt. You can evat luate the test accuracy by running test_resnet.py.
+## Training the Neural Field
+Run neural_field.py for around 20 epochs. The resulting checkpoints will be saved under checkpoints/chkpt_{}.pt. 
 
-## Creating the Latent Encodings
-Run create_latents.py to do inference on the trained ResNet model stored in src/models. 
+## Reconstructing The Images
+Run reconstruction.py as follows:
+```
+python3 reconstruction.py --imagenum n
+```
+where n is the image number you want to reproduce in dataloader_ndf.py. 
 
-## Point Sampling
+## Doing the Energy Optimization
+Run optimizer.py as follows:
+```
+python3 optimizer.py --image1num n1 --image2num n2
+```
+with image numbers n1 and n2 of your choice. You will be prompted to a screen where you can click and select points.
+Then, an energy optimization will be run on the second image and the corresponding points will be chosen and an image 
+with those points labeled will be stored in ./src/.
 
 ## Miscallaneous Issues:
 
