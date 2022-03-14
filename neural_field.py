@@ -12,9 +12,9 @@ from constants import IMG_DIR
 import torchvision.models as models
 import copy
 
-batch_size = 32 
+batch_size = 1 
 num_epochs = 10
-learning_rate = 3e-4
+learning_rate = 1e-4
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def initialize_encoder(num_classes, feature_extract, use_pretrained = True):
@@ -72,7 +72,7 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
     best_model_wts = copy.deepcopy(model.state_dict())
 
     for epoch in range(num_epochs):
-        print('Epoch {}/{}'.format(epoch+11, num_epochs+11))
+        print('Epoch {}/{}'.format(epoch+31, num_epochs+30))
         print('_'*10)
 
         # Each epoch has a training and validation phase
@@ -108,7 +108,7 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
 
             print('{} Loss: {:.4f}'.format(phase, epoch_loss))
 
-        torch.save(model, './checkpoints/chkpt_{}.pt'.format(epoch))
+        torch.save(model, './checkpoints/chkpt_{}.pt'.format(epoch+30))
         print()
 
     time_elapsed = time.time() - since
@@ -121,8 +121,7 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
 if __name__ == '__main__':
     encoder = initialize_encoder(128, False, True)
 
-    model = torch.load('./checkpoints/chkpt_9.pt')
-    model = model.to(device)
+    model = torch.load('./checkpoints/chkpt_29.pt').to(device)
 
     print('Initializing Datasets and Dataloaders...')
 
