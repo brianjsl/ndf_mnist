@@ -21,9 +21,9 @@ Place the downloaded checkpoint in the 'checkpoints' folder.
 ## Reconstructing The Images
 Run reconstruction.py as follows:
 ```
-python3 reconstruction.py --imagenum n
+python3 reconstruction.py --image_class c1 --image_num n1
 ```
-where n is the image number you want to reproduce in dataloader_ndf.py. 
+where c1 is the class of the image you want to reconstruct and n1 is the corresponding image number.
 
 ## Doing the Energy Optimization
 Run optimizer.py as follows:
