@@ -14,7 +14,9 @@ The corresponding dataloader class can be found in dataloader.py which will turn
 multilabel classification (in the ResNet block). 
 
 ## Training the Neural Field
-Run neural_field.py for around 20 epochs. The resulting checkpoints will be saved under checkpoints/chkpt_{}.pt. 
+Run neural_field.py for around 40 epochs. The resulting checkpoints will be saved under checkpoints/chkpt_{}.pt. 
+UPDATE: You can download a pre-trained model [here](https://www.dropbox.com/s/cof2ctfwdesmzix/chkpt_39.pt?dl=0). 
+Place the downloaded checkpoint in the 'checkpoints' folder.
 
 ## Reconstructing The Images
 Run reconstruction.py as follows:
