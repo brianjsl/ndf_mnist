@@ -27,7 +27,8 @@ def writePoints(source):
     while True: 
         cv2.imshow('image', image)
         k = cv2.waitKey(20) & 0xFF
-        if k == 27: 
+        if k == 27:
+            cv2.destroyAllWindows() 
             return image, points
 
 if __name__ == '__main__':

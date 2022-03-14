@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import PIL.Image as Image
 from writePoints import writePoints
 import cv2
+import argparse
+from tqdm import tqdm
 
 data_transforms = transforms.Compose([
                 transforms.Normalize([0.5],[0.5])
@@ -58,9 +60,8 @@ def optimize(target_image, target_coord, image):
     energy1 = ndf(target_image, target_coord)
     min_diff = float('inf')
     min_coord = None
-    for i in range(32):
-        for j in range(32):
-            print('Optimizing on: ',(i,j))
+    for i in tqdm(range(32)):
+        for j in range(32): 
             energy2 = ndf(image, torch.Tensor([i,j]).view(2,-1))
             energy_diff = torch.norm(energy2-energy1)
             if energy_diff < min_diff:
@@ -68,15 +69,52 @@ def optimize(target_image, target_coord, image):
                 min_coord = torch.Tensor([i,j]).view(2,-1)
     return min_coord, min_diff
 
+def argparser():
+    '''
+    Initializes argparser. 
+
+    Arguments: 
+    --image1_class: class of image 1
+    --image1_num: number of image 1
+    --image2_class: class of image 2
+    --image2_num: class of image2
+    '''
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument('--image1_class', type = str, 
+                        default = 00,
+                        help='class of image 1'
+                        )
+    parser.add_argument('--image1_num', type = str, 
+                        default = 0,
+                        help='num of image 1'
+                        )
+    parser.add_argument('--image2_class', type = str, 
+                        default = 00,
+                        help='class of image 2'
+                        )
+    parser.add_argument('--image2_num', type = str, 
+                        default = 0,
+                        help='num of image 2'
+                        )
+    config = parser.parse_args()
+    return config
+
 if __name__ == '__main__':
+    config = argparser()
     transform_to_tensor = transforms.ToTensor()
 
-    image1 = Image.open('./data/MNIST/overlapMNIST/train/07/122_07.png')
+    image1 = Image.open('./data/MNIST/overlapMNIST/train/'+config.image1_class+'/'+config.image1_num+'_'\
+        +config.image1_class+'.png')
     image1 = transform_to_tensor(image1)
 
     image1_with_points, coordinates =  writePoints(image1.squeeze())
 
-    image2 = Image.open('./data/MNIST/overlapMNIST/train/37/31_37.png')
+
+    image2 = Image.open('./data/MNIST/overlapMNIST/train/'+config.image2_class+'/'+config.image2_num+'_'\
+        +config.image2_class+'.png')
     image2 = transform_to_tensor(image2)
     
     min_coords = []
@@ -89,10 +127,11 @@ if __name__ == '__main__':
     for min_coord in min_coords:
         cv2.circle(image2, (int(min_coord[0,0].item()), int(min_coord[1,0].item())), radius = 1,  color=(0,255,0), thickness = 1)
     
-    plt.imshow(image1_with_points, cmap='gray')
-
-    plt.imshow(image2, cmap='gray')
+    plt.figure(figsize=[8,4]);
+    plt.subplot(121); plt.imshow(image1_with_points.squeeze(), cmap = 'gray'); plt.title('Image 1 with labeled points')
+    plt.subplot(122); plt.imshow(image2.squeeze(), cmap = 'gray'); plt.title('Image 2 with corresponding points')
     plt.show()
+    
 
 
 

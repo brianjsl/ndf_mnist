@@ -13,18 +13,14 @@ import copy
 from neural_field import NeuralField
 import matplotlib.pyplot as plt
 import argparse
+import PIL.Image as Image
 
 def argparser():   
     '''
     Argparser Setup. 
     
     Arguments: 
-        --mnist_path: path to MNIST dataset
-        --overlapmnist_path: path to store overlapping MNIST dataset
-        --train_val_test_ratio: ratio (in percentage) of train to val to test
-        --image_size: default image size
-        --num_image_per_class: number of images per class
-        --random_seed: default random seed to choose    
+        --image_num: number of image to run the reconstruction on in dataset.
     '''
 
     #initialize argparser
@@ -32,8 +28,12 @@ def argparser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    parser.add_argument('--image_num', type = int, 
-                        default = 0,
+    parser.add_argument('--image_class', type = str, 
+                        default = '61',
+                        help='class of image'
+                        )
+    parser.add_argument('--image_num', type = str, 
+                        default = '0',
                         help='number of image'
                         )
     config = parser.parse_args()
@@ -41,23 +41,26 @@ def argparser():
 
 if __name__ == '__main__':
     config = argparser()
-    model = torch.load('./checkpoints/chkpt_29.pt', map_location='cpu')
+    model = torch.load('./checkpoints/chkpt_39.pt', map_location='cpu')
     model.eval()
 
     data_transforms = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.Normalize([0.5],[0.5])
     ])
-    image_dataset = OverlapMNISTNDF(IMG_DIR, data_transforms, 'train')
-    subset = torch.utils.data.Subset(image_dataset, [i for i in range(1024*config.image_num, 1024*(1+config.image_num))])
-    dataloader = torch.utils.data.DataLoader(subset, batch_size = 32, shuffle = False, num_workers = 0)
-    iterable = iter(dataloader)
     reconstructed = torch.zeros((32,32))
-    for i in range(32):
-        ((image, coordinates), intensities) = next(iterable)
-        output = model((image, coordinates))
+    image = Image.open('./data/MNIST/overlapMNIST/train/'+config.image_class+'/'+\
+            config.image_num+'_'+config.image_class+'.png')
+    image = data_transforms(image)
+    image = torch.unsqueeze(image,0) 
+
+    plt.figure(figsize=[8,4]);
+
+    for i in tqdm(range(32)): 
         for j in range(32):
-            print(coordinates[j])
-            reconstructed[coordinates[j][1][0]][coordinates[j][0][0]] = output[j].item()
-    plt.imshow(reconstructed, cmap='gray')
+            coordinates = torch.tensor([i,j]).view(2,-1)
+            output = model((image, coordinates))
+            reconstructed[j][i] = output.item()
+    plt.subplot(121); plt.imshow(image.squeeze(), cmap = 'gray'); plt.title('Original Image')
+    plt.subplot(122); plt.imshow(reconstructed.squeeze(), cmap = 'gray'); plt.title('Reconstructed Image')
     plt.show()

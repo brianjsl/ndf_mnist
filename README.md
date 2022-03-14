@@ -26,11 +26,14 @@ where n is the image number you want to reproduce in dataloader_ndf.py.
 ## Doing the Energy Optimization
 Run optimizer.py as follows:
 ```
-python3 optimizer.py --image1num n1 --image2num n2
+python3 optimizer.py --image1_class c1 --image1_num n1 --image2_class c2 --image2_num n2
 ```
-with image numbers n1 and n2 of your choice. You will be prompted to a screen where you can click and select points.
-Then, an energy optimization will be run on the second image and the corresponding points will be chosen and an image 
-with those points labeled will be stored in ./src/.
+with image numbers n1 and n2 of your choice. For example, for image1 to be of class 07, image number 37 and
+image2 to have class 31, we can run the following:
+```
+python3 optimizer.py --image1_class 07 --image1_num 79 --image2_class 37 --image2_num 31
+```
+You will be prompted to a screen where you can click and select points. Then, an energy optimization will be run on the second image and the corresponding points will be chosen and an image with those points will appear for side by side comparison.
 
 ## Miscallaneous Issues:
 
