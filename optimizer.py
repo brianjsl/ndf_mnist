@@ -9,6 +9,8 @@ from neural_field import NeuralField
 from constants import IMG_DIR
 import matplotlib.pyplot as plt
 import PIL.Image as Image
+from writePoints import writePoints
+import cv2
 
 data_transforms = transforms.Compose([
                 transforms.Normalize([0.5],[0.5])
@@ -67,15 +69,32 @@ def optimize(target_image, target_coord, image):
     return min_coord, min_diff
 
 if __name__ == '__main__':
-    image_dataset = OverlapMNISTNDF(IMG_DIR, None, 'train')
-    (image, coordinate), intensity = image_dataset[0]
     transform_to_tensor = transforms.ToTensor()
-    
-    image = transform_to_tensor(image)
-    image2 = Image.open('./data/MNIST/overlapMNIST/test/61/13_61.png')
+
+    image1 = Image.open('./data/MNIST/overlapMNIST/train/07/122_07.png')
+    image1 = transform_to_tensor(image1)
+
+    image1_with_points, coordinates =  writePoints(image1.squeeze())
+
+    image2 = Image.open('./data/MNIST/overlapMNIST/train/37/31_37.png')
     image2 = transform_to_tensor(image2)
     
-    min_coord, min_diff = optimize(image, coordinate, image2)
+    min_coords = []
+    for coord in coordinates:
+        coord = torch.Tensor(coord).view(2,-1)
+        min_coord, min_diff = optimize(image1, coord, image2)
+        min_coords.append(min_coord)
+    
+    image2 = image2.squeeze().numpy()
+    for min_coord in min_coords:
+        cv2.circle(image2, (int(min_coord[0,0].item()), int(min_coord[1,0].item())), radius = 1,  color=(0,255,0), thickness = 1)
+    
+    plt.imshow(image1_with_points, cmap='gray')
+
+    plt.imshow(image2, cmap='gray')
+    plt.show()
+
+
 
 
 
