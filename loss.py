@@ -40,9 +40,8 @@ writer.add_scalar("Loss/train", 558.5870, 34)
 writer.add_scalar("Loss/train", 549.7343, 35)
 writer.add_scalar("Loss/train", 541.5503, 36)
 writer.add_scalar("Loss/train", 532.5224, 37)
-
-
-
-
+writer.add_scalar("Loss/train", 524.0207, 38)
+writer.add_scalar("Loss/train", 514.6851, 39)
+writer.add_scalar("Loss/train", 507.6904, 40)
 writer.flush()
 

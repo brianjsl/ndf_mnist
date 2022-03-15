@@ -121,7 +121,7 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
 if __name__ == '__main__':
     encoder = initialize_encoder(128, False, True)
 
-    model = torch.load('./checkpoints/chkpt_29.pt').to(device)
+    model = torch.load('./checkpoints/chkpt_39.pt').to(device)
 
     print('Initializing Datasets and Dataloaders...')
 

@@ -1,6 +1,7 @@
 # Image Correspondance in Overlapping MNIST with NDFs
 
-This is the code for finding image correspondence on an overlapping MNIST dataset.
+This is the code for finding image correspondence on an overlapping MNIST dataset. Work done for Spring 2022 UROP
+supervised by Yilun Du and Josh Tenenbaum.
 
 ## Generating Data
 Run generator2.py as follows:
@@ -52,3 +53,7 @@ export CUDA_HOME=/software/cuda/11.4
 ```
 export LD_LIBRARY_PATH=/software/cuda/11.4/targets/ppc64le-linux/lib/
 ```
+
+## Acknowledgements
+
+Much of the idea behind this work is based off of the work by Yilun Du [here](https://yilundu.github.io/ndf/)
