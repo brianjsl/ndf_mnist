@@ -11,9 +11,6 @@ python3 generator2.py --overlapmnist_path ./data/MNIST/overlapMNIST --num_image_
 This will create a dataset of 32x32 images of overlapping mnist digits in folders of the form 'ab' where 'a' is the
 left digit and 'b' is the right digit. 
 
-The corresponding dataloader class can be found in dataloader.py which will turn the labels into labels usable in 
-multilabel classification (in the ResNet block). 
-
 ## Training the Neural Field
 Run neural_field.py for around 40 epochs. The resulting checkpoints will be saved under checkpoints/chkpt_{}.pt. 
 UPDATE: You can download a pre-trained model [here](https://www.dropbox.com/s/cof2ctfwdesmzix/chkpt_39.pt?dl=0). 

@@ -13,6 +13,11 @@ from writePoints import writePoints
 import cv2
 import argparse
 from tqdm import tqdm
+import torch.optim as optim
+
+learning_rate = 1e-4
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 data_transforms = transforms.Compose([
                 transforms.Normalize([0.5],[0.5])
@@ -49,25 +54,29 @@ def ndf(image, coordinate):
     h3.remove()
     return energy
 
-def optimize(target_image, target_coord, image):
-    '''
-    Given an input image and coordinate finds the energy minimized coordinate in image2.
-    Params1: 
-    @target_image: image you want to minimize energy to
-    @target_coord: corresponding coordinate
-    @image: image you sample over
-    '''
-    energy1 = ndf(target_image, target_coord)
-    min_diff = float('inf')
-    min_coord = None
-    for i in tqdm(range(32)):
-        for j in range(32): 
-            energy2 = ndf(image, torch.Tensor([i,j]).view(2,-1))
-            energy_diff = torch.norm(energy2-energy1)
-            if energy_diff < min_diff:
-                min_diff = energy_diff
-                min_coord = torch.Tensor([i,j]).view(2,-1)
-    return min_coord, min_diff
+class Energy(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        weights = torch.distributions.Uniform(0, 32).sample((2,))
+        self.weights = nn.Parameter(weights, requires_grad = True)
+
+    def forward(self, target_image, target_coord, image):
+        i, j = self.weights
+        energy1 = ndf(target_image, target_coord)
+        energy2 = ndf(image, torch.tensor([i,j]).view(2,-1))
+        return torch.norm(energy2-energy1)
+
+
+def optimize(energy, optimizer, num_epochs, target_image, target_coord, image):
+    for epoch in range(num_epochs): 
+        loss = energy(target_image, target_coord, image)
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+
+    return energy.weights
+    
 
 def argparser():
     '''
@@ -84,19 +93,19 @@ def argparser():
     )
 
     parser.add_argument('--image1_class', type = str, 
-                        default = 00,
+                        default = '00',
                         help='class of image 1'
                         )
     parser.add_argument('--image1_num', type = str, 
-                        default = 0,
+                        default = '0',
                         help='num of image 1'
                         )
     parser.add_argument('--image2_class', type = str, 
-                        default = 00,
+                        default = '00',
                         help='class of image 2'
                         )
     parser.add_argument('--image2_num', type = str, 
-                        default = 0,
+                        default = '0',
                         help='num of image 2'
                         )
     config = parser.parse_args()
@@ -119,8 +128,10 @@ if __name__ == '__main__':
     
     min_coords = []
     for coord in coordinates:
-        coord = torch.Tensor(coord).view(2,-1)
-        min_coord, min_diff = optimize(image1, coord, image2)
+        energy = Energy().to(device)
+        print(energy.parameters())
+        optimizer = torch.optim.Adam(energy.parameters(), lr = 1e-4)
+        min_coord = optimize(energy, optimizer, 10000, image1, torch.tensor(coord).view(2,-1), image2)
         min_coords.append(min_coord)
     
     image2 = image2.squeeze().numpy()
