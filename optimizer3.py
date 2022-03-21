@@ -34,15 +34,18 @@ def ndf(image, coordinate):
     image = data_transforms(image)
     image = torch.unsqueeze(image, 0)
 
-    model = torch.load('./checkpoints/new/chkpt_6.pt', map_location='cpu')
-
+    model = torch.load('./checkpoints/new/chkpt_2.pt', map_location='cpu')
+    
     h1 = model.linear_relu_stack[1].register_forward_hook(getActivation('layer1'))
     h2 = model.linear_relu_stack[3].register_forward_hook(getActivation('layer2'))
     h3 = model.linear_relu_stack[5].register_forward_hook(getActivation('layer3'))
-    
-    output = model((image, coordinate))
-    energy = torch.cat((activations['layer1'], activations['layer2'], activations['layer3']), 1)
+    h4 = model.linear_relu_stack[7].register_forward_hook(getActivation('layer4'))
+    h5 = model.linear_relu_stack[9].register_forward_hook(getActivation('layer5'))
 
+    output = model((image, coordinate))
+    energy = torch.cat((activations['layer1'], activations['layer2'], activations['layer3'], \
+        activations['layer4'], activations['layer5']), 1)
+    # energy = activations['layer4']
     h1.remove()
     h2.remove()
     h3.remove()

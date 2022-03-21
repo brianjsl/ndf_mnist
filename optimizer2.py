@@ -14,6 +14,7 @@ import cv2
 import argparse
 from tqdm import tqdm
 import torch.optim as optim
+from torch.autograd import Variable
 
 learning_rate = 1e-4
 
@@ -40,14 +41,14 @@ def ndf(image, coordinate):
     image = torch.unsqueeze(image, 0)
     coordinate = torch.unsqueeze(coordinate,0)
 
-    model = torch.load('./checkpoints/chkpt_29.pt', map_location='cpu')
+    model = torch.load('./checkpoints/chkpt_39.pt', map_location=device)
 
     h1 = model.linear_relu_stack[1].register_forward_hook(getActivation('layer1'))
     h2 = model.linear_relu_stack[3].register_forward_hook(getActivation('layer2'))
     h3 = model.linear_relu_stack[5].register_forward_hook(getActivation('layer3'))
 
     output = model((image, coordinate))
-    energy = torch.cat((activations['layer1'], activations['layer2'], activations['layer3']), 1)
+    energy = torch.cat((activations['layer1'], activations['layer2'], activations['layer3']), 1).to(device)
 
     h1.remove()
     h2.remove()
@@ -64,20 +65,19 @@ class Energy(nn.Module):
     def forward(self, target_image, target_coord, image):
         i, j = self.weights
         energy1 = ndf(target_image, target_coord)
-        energy2 = ndf(image, torch.tensor([i,j]).view(2,-1))
+        energy2 = ndf(image, torch.tensor([i,j]).view(2,-1).to(device))
         return torch.norm(energy2-energy1)
 
 
 def optimize(energy, optimizer, num_epochs, target_image, target_coord, image):
-    for epoch in range(num_epochs): 
+    for epoch in tqdm(range(num_epochs)): 
         loss = energy(target_image, target_coord, image)
+        loss = Variable(loss, requires_grad = True)
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
-
-    return energy.weights
+    return (round(energy.weights[0].item()),round(energy.weights[1].item()))
     
-
 def argparser():
     '''
     Initializes argparser. 
@@ -117,26 +117,26 @@ if __name__ == '__main__':
 
     image1 = Image.open('./data/MNIST/overlapMNIST/train/'+config.image1_class+'/'+config.image1_num+'_'\
         +config.image1_class+'.png')
-    image1 = transform_to_tensor(image1)
+    image1 = transform_to_tensor(image1).to(device)
 
     image1_with_points, coordinates =  writePoints(image1.squeeze())
-
+    # coordinates = [(17,11)]
 
     image2 = Image.open('./data/MNIST/overlapMNIST/train/'+config.image2_class+'/'+config.image2_num+'_'\
         +config.image2_class+'.png')
-    image2 = transform_to_tensor(image2)
+    image2 = transform_to_tensor(image2).to(device)
     
     min_coords = []
     for coord in coordinates:
         energy = Energy().to(device)
-        print(energy.parameters())
         optimizer = torch.optim.Adam(energy.parameters(), lr = 1e-4)
-        min_coord = optimize(energy, optimizer, 10000, image1, torch.tensor(coord).view(2,-1), image2)
+        min_coord = optimize(energy, optimizer, 1000, image1, torch.tensor(coord).view(2,-1).to(device), image2)
+        print(min_coord)
         min_coords.append(min_coord)
     
     image2 = image2.squeeze().numpy()
     for min_coord in min_coords:
-        cv2.circle(image2, (int(min_coord[0,0].item()), int(min_coord[1,0].item())), radius = 1,  color=(0,255,0), thickness = 1)
+        cv2.circle(image2, min_coord, radius = 1,  color=(0,255,0), thickness = 1)
     
     plt.figure(figsize=[8,4]);
     plt.subplot(121); plt.imshow(image1_with_points.squeeze(), cmap = 'gray'); plt.title('Image 1 with labeled points')

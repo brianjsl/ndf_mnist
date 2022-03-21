@@ -41,7 +41,7 @@ def argparser():
 
 if __name__ == '__main__':
     config = argparser()
-    model = torch.load('./checkpoints/chkpt_39.pt', map_location='cpu')
+    model = torch.load('./checkpoints/new/chkpt_39.pt', map_location='cpu')
     model.eval()
 
     data_transforms = transforms.Compose([

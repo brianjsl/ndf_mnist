@@ -54,3 +54,6 @@ export LD_LIBRARY_PATH=/software/cuda/11.4/targets/ppc64le-linux/lib/
 ## Acknowledgements
 
 Much of the idea behind this work is based off of the work by Yilun Du [here](https://yilundu.github.io/ndf/)
+
+Error case:
+python3 reconstruction.py --image_class 71 --image_num 16
